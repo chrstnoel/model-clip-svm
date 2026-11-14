@@ -1,0 +1,11 @@
+# Folder Model & Weights Machine Learning (Ukuran Besar > 100MB)
+clip_model_weights/
+experiment_results/
+
+# Folder Dataset
+DORMIY-ML-Dataset/
+
+# Cache Python & Editor
+__pycache__/
+.vscode/
+.ipynb_checkpoints/
