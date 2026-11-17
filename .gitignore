@@ -1,11 +1,51 @@
-# Folder Model & Weights Machine Learning (Ukuran Besar > 100MB)
+# =============================================================================
+# 1. FILE MODEL MACHINE LEARNING BERUKURAN BESAR (> 40MB - 600MB)
+#    (Wajib di-download terpisah via link Cloud Storage / Google Drive di README)
+# =============================================================================
+*.safetensors
+*.bin
+*.joblib
+*.npy
+*.npz
+
+# Model spesifik di direktori produksi
+yg dipake/models/model_clip_17cat_projection_head/model.safetensors
+yg dipake/models/svm_multimodal_large_17cat.joblib
+
+# =============================================================================
+# 2. DATASET BERUKURAN BESAR & ARSIP ZIP (> 100MB)
+# =============================================================================
+*.zip
+*.tar.gz
+retail-products-classification.zip
+retail-products-classification/
+
+# =============================================================================
+# 3. FOLDER RIWAYAT EKSPERIMEN & BACKUP LAMA
+# =============================================================================
+history/
+punya farhan/
 clip_model_weights/
 experiment_results/
-
-# Folder Dataset
 DORMIY-ML-Dataset/
 
-# Cache Python & Editor
+# =============================================================================
+# 4. PYTHON CACHE, VENV, CHECKPOINTS & IDE SETTINGS
+# =============================================================================
 __pycache__/
-.vscode/
+*.py[cod]
+*$py.class
 .ipynb_checkpoints/
+.vscode/
+.idea/
+venv/
+env/
+.env
+
+# =============================================================================
+# 5. FILE SISTEM OS & SEMENTARA
+# =============================================================================
+desktop.ini
+Thumbs.db
+.DS_Store
+test.csv

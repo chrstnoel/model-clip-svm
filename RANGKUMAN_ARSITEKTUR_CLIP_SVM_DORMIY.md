@@ -7,12 +7,13 @@
 ## 📑 DAFTAR ISI
 1. [Hakekat Dasar: Apakah CLIP & SVM Punya Akal Pikiran?](#1-hakekat-dasar-apakah-clip--svm-punya-akal-pikiran)
 2. [Rahasia Angka: Bagaimana CLIP Mengubah Gambar & Teks Menjadi Vektor 512 Angka](#2-rahasia-angka-bagaimana-clip-mengubah-gambar--teks-menjadi-vektor-512-angka)
-3. [Bagaimana Cara Menghubungkan CLIP dan SVM?](#3-bagaimana-cara-menghubungkan-clip-dan-svm)
+3. [Bagaimana Cara Menghubungkan CLIP dan SVM? (Multimodal Fusion 1024-dim)](#3-bagaimana-cara-menghubungkan-clip-dan-svm-multimodal-fusion-1024-dim)
 4. [Bagaimana Cara SVM Tahu Siapa Masuk Kategori Mana?](#4-bagaimana-cara-svm-tahu-siapa-masuk-kategori-mana)
 5. [Evaluasi Training: Mengapa Dulu Sempat Drop ke 20% dan Bagaimana Cara Memperbaikinya?](#5-evaluasi-training-mengapa-dulu-sempat-drop-ke-20-dan-bagaimana-cara-memperbaikinya)
-6. [Dua Alur Kerja Nyata (Two Distinct Workflows)](#6-dua-alur-kerja-nyata-two-distinct-workflows)
-   - [Alur 1: Admin Memasukkan Produk Baru ke Database (Auto-Categorization & Indexing)](#alur-1-admin-memasukkan-produk-baru-ke-database)
-   - [Alur 2: Pengguna Mencari Produk Menggunakan Teks (Real-Time Search & Retrieval)](#alur-2-pengguna-mencari-produk-menggunakan-teks)
+6. [Tiga Alur Kerja Nyata (Three Distinct Workflows)](#6-tiga-alur-kerja-nyata-three-distinct-workflows)
+   - [Alur 1: Admin Memasukkan Produk Baru (Auto-Categorization & Indexing)](#alur-1-admin-memasukkan-produk-baru-ke-database)
+   - [Alur 2A: Pengguna Mencari via Teks (Text-to-Image Semantic Search)](#alur-2a-pengguna-mencari-produk-menggunakan-teks-text-to-image)
+   - [Alur 2B: Pengguna Mencari via Foto Produk (Image-to-Image Visual Search)](#alur-2b-pengguna-mencari-produk-menggunakan-foto-image-to-image)
 
 ---
 
@@ -28,7 +29,7 @@
   * Sifat dasarnya adalah **Self-Supervised / Weakly Supervised**: ia belajar sendiri dari teks caption internet tanpa perlu manusia melabeli kategori secara manual.
 * **SVM (Support Vector Machine)**:
   * Awalnya **buta total**. SVM tidak tahu apa itu *Stationery*, *Panci*, atau *Hardware*.
-  * Sifat dasarnya adalah **Murni Supervised Learning (Terbimbing)**: SVM belajar murni dari data latihan yang **KITA** beri tahu jawabannya (*Ground Truth Label*).
+  * Sifat dasarnya adalah **Murni Supervised Learning (Terbimbing)**: SVM belajar murni dari data latihan yang **KITA** beri tahu jawabannya (*Ground Truth Label* pada 17 Kategori Bersih Amazon).
 
 ---
 
@@ -52,16 +53,16 @@ Karena nilainya lebih besar, sistem langsung tahu bahwa pulpen gel jauh lebih be
 
 ---
 
-## 3. Bagaimana Cara Menghubungkan CLIP dan SVM?
+## 3. Bagaimana Cara Menghubungkan CLIP dan SVM? (Multimodal Fusion 1024-dim)
 
 Kunci terbesarnya adalah: **Shared Multimodal Space (Satu Ruang yang Sama)**.
 * Di model biasa, teks dan gambar memiliki bahasa angka yang berbeda dan tidak bisa disatukan.
-* Di CLIP, **vektor teks dan vektor foto dibuat memiliki format koordinat yang sama persis**:
-  * Foto anak anjing menghasilkan angka koordinat: `[0.24, -0.51, 0.88, ...]`
-  * Tulisan `"anak anjing"` menghasilkan angka koordinat: `[0.23, -0.50, 0.87, ...]`
+* Di CLIP, **vektor teks dan vektor foto dibuat memiliki format koordinat yang sama persis** (masing-masing 512-dimensi).
 
-### Bagaimana SVM Membacanya?
-Bagi SVM, ia **tidak peduli** apakah angka itu berasal dari kamera foto atau ketikan keyboard. SVM hanya melihat **512 deret angka**. Karena foto pulpen dan tulisan alat tulis menghasilkan deret angka di koordinat yang sama, **SVM bisa memproses keduanya menggunakan pagar pembatas yang sama!**
+### Mengapa Kita Menggabungkannya Menjadi 1024-dimensi untuk SVM?
+Saat melatih SVM, gambar saja terkadang ambigu (contoh: botol sampo vs botol suplemen kesehatan bentuknya mirip). Begitu pula teks saja terkadang terlalu singkat.
+* Kita menggabungkan: **512 angka vektor gambar + 512 angka vektor teks judul = 1024 angka multimodal**.
+* Efeknya: Akurasi Top-1 SVM melonjak drastis dari **39.56% $\rightarrow$ 72.29%**, dan Top-3 mencapai **91.88%**!
 
 ---
 
@@ -74,14 +75,8 @@ Bagi SVM, ia **tidak peduli** apakah angka itu berasal dari kamera foto atau ket
    * Meja, kursi, dan lemari berkumpul di bagian tengah.
 2. **KITA mengajari SVM**:
    * *"Hai SVM, barang-barang di sudut barat ini kami namai kategori **Home & Garden**."*
-   * *"Barang-barang di sudut timur kami namai kategori **Hardware**."*
+   * *"Barang-barang di sudut timur kami namai kategori **Tools & Home Improvement**."*
 3. **SVM menarik garis pagar pembatas (*Hyperplane*)** yang tegas di antara kelompok-kelompok tersebut.
-
-### Bagaimana jika ada barang baru masuk (misal: Panci Listrik)?
-1. CLIP mendeteksi panci punya pegangan, berbahan logam, dan alat masak $\rightarrow$ ditaruh di dekat pisau dan teko (sudut barat).
-2. SVM tidak perlu tahu apakah itu namanya panci atau mangkuk. SVM hanya melihat:  
-   > *"Titik koordinat barang ini mendarat di dalam zona pagar yang kemarin dinamai manusia sebagai **Home & Garden**."*
-3. Maka SVM langsung menetapkan kategorinya: **`Home & Garden`**!
 
 ---
 
@@ -92,30 +87,39 @@ Bagi SVM, ia **tidak peduli** apakah angka itu berasal dari kamera foto atau ket
 * Kita melatih seluruh 151 juta bobot itu hanya dengan **40 gambar** dan Learning Rate terlalu besar (`0.001`).
 * **Akibatnya**: Terjadi *Overfitting* dan *Catastrophic Forgetting* (bobot CLIP rusak dan lupa ingatan). Model mengalami *Mode Collapse* (menebak 1 kategori yang sama terus-menerus), sehingga akurasi anjlok ke $\frac{1}{5} = \mathbf{20\%}$.
 
-### ✅ Keberhasilan di Sesi 3 (Projection-Head Tuning):
+### ✅ Keberhasilan di Sesi 3 & Pembersihan Data (Projection-Head Tuning):
 * **Kunci (*Freeze*) 99.6% Bobot Asli CLIP** agar kecerdasan dasarnya tidak rusak.
-* **Hanya Buka 0.4% Bobot Lapisan Akhir** (`visual_projection` dan `text_projection`).
-* **Hasilnya**: Akurasi Top-1 penebakan objek langsung melonjak drastis dari **`56%` $\rightarrow$ `84%`**, dan Top-5 mencapai **`96%`**!
+* **Hanya Buka 0.4% Bobot Lapisan Akhir** (`visual_projection` dan `text_projection`) dengan LR rendah (`5e-5`).
+* **Pembersihan 17 Kategori Bersih & Scaling 3.400 Data**: Menghilangkan kategori tumpang tindih (*Beauty vs All Beauty*).
+* **Hasilnya**: Akurasi pencarian benda spesifik mencapai **80.15% Top-1** dan **96.32% Top-5**!
 
 ---
 
-## 6. Dua Alur Kerja Nyata (Two Distinct Workflows)
+## 6. Tiga Alur Kerja Nyata (Three Distinct Workflows)
 
 ```mermaid
 flowchart TD
-    subgraph ALUR_1["🏢 ALUR 1: ADMIN MEMASUKKAN BARANG BARU (Masuk Gudang / Database)"]
-        A1["1. Admin Upload Foto Produk Baru + Judul: 'Pulpen Gel Hitam'"] --> B1["2. CLIP Image Encoder Ubah Foto Jadi Vektor (512 Angka)"]
-        B1 --> C1["3. Vektor Masuk ke SVM"]
-        C1 --> D1["4. SVM Otomatis Menetapkan Kategori: 'Office Supplies'"]
-        B1 --> E1[("5. Vektor Foto Disimpan ke Feature Store (Database 50 Katalog)")]
+    subgraph ALUR_1["🏢 ALUR 1: ADMIN INGESTION (FOTO + JUDUL -> SVM)"]
+        A1["1. Admin Upload Foto Produk Baru + Judul Produk"] --> B1["2. CLIP Ekstrak Vektor Visual (512) & Vektor Teks (512)"]
+        B1 --> C1["3. Gabung Jadi 1024-dim Multimodal Masuk ke SVM"]
+        C1 --> D1["4. SVM Menetapkan Kategori Otomatis: 'Musical Instruments' (Confidence %)"]
+        B1 --> E1[("5. Vektor Foto Masuk Feature Store Katalog Database")]
     end
 
-    subgraph ALUR_2["🛒 ALUR 2: USER MENCARI PRODUK DENGAN KATA 'ALAT TULIS'"]
-        A2["1. User Mengetik Query: 'alat tulis kantor'"] --> B2["2. CLIP Text Encoder Ubah Kata Jadi Vektor (512 Angka)"]
-        B2 --> C2["3. TAHAP 1 (SVM): Tebak Kategori Query -> 'Office Supplies'"]
-        B2 --> D2["4. TAHAP 2 (Cosine): Kalikan Vektor Teks x 50 Vektor Database"]
-        E1 -. Dibaca & Dihitung .-> D2
-        D2 --> E2["5. Hasil di Layar User: Kategori = Office Supplies + Top-5 Foto Produk (Termasuk Pulpen Gel!)"]
+    subgraph ALUR_2A["🔍 ALUR 2A: USER SEARCH DENGAN TEKS (TEXT-TO-IMAGE)"]
+        A2["1. User Ketik Kata Kunci: 'senar gitar akustik fender'"] --> B2["2. Auto-Translate ke Inggris -> CLIP Text Encoder (512-dim)"]
+        B2 --> C2["3. SVM Prediksi Kategori: 'Musical Instruments'"]
+        B2 --> D2["4. Cosine Similarity: Vektor Teks x Seluruh Vektor Foto di Katalog"]
+        E1 -. Dihitung Dot Product .-> D2
+        D2 --> E2["5. Hasil di Layar: Foto Fisik Produk + Judul + Match %"]
+    end
+
+    subgraph ALUR_2B["📷 ALUR 2B: USER SEARCH DENGAN FOTO (IMAGE-TO-IMAGE)"]
+        A3["1. User Upload Foto Produk yang Ingin Dicari"] --> B3["2. CLIP Image Encoder Ubah Foto Jadi Vektor Visual (512-dim)"]
+        B3 --> C3["3. SVM Prediksi Kategori Visual Produk"]
+        B3 --> D3["4. Cosine Similarity: Vektor Foto User x Seluruh Vektor Foto Katalog"]
+        E1 -. Dihitung Dot Product .-> D3
+        D3 --> E3["5. Hasil di Layar: Foto Produk di Database yang Visualnya Paling Mirip"]
     end
 ```
 
@@ -123,32 +127,33 @@ flowchart TD
 
 ### 🏢 ALUR 1: Admin Menambahkan Barang Baru ke Database
 * **Tujuan**: Memasukkan barang baru ke sistem tanpa admin harus pusing memilih kategori secara manual (*Auto-Categorization & Indexing*).
-1. **Input**: Admin upload foto barang baru (`gambar_pulpen.jpg`) dan judul singkat (*"Pulpen Gel Hitam 0.5mm"*).
-2. **Ekstraksi CLIP**: Foto diubah oleh CLIP menjadi **Vektor 512 angka**.
-3. **SVM Mengkategorikan**: Vektor tersebut dimasukkan ke SVM. SVM melihat koordinatnya berada di zona alat kantor, lalu memberi label otomatis: **`Office Supplies`**.
-4. **Penyimpanan (*Feature Store*)**: Foto, judul, dan vektor 512 angka tersebut disimpan ke dalam database katalog toko Dormiy.
+1. **Input**: Admin upload foto barang fisik dan judul (*"Fender Telecaster Saddle Bridge"*).
+2. **Ekstraksi CLIP**: Foto diubah menjadi vektor visual 512 angka, judul diubah menjadi vektor teks 512 angka $\rightarrow$ digabung menjadi vektor 1024 angka.
+3. **SVM Mengkategorikan**: SVM menetapkan kategori produk dengan confidence score tertinggi (contoh: *Musical Instruments 62.4%*).
+4. **Penyimpanan (*Feature Store*)**: Foto dan vektor 512 angka disimpan ke database katalog agar siap dicari oleh user.
 
 ---
 
-### 🛒 ALUR 2: Pengguna Mencari Barang Berdasarkan Teks
-* **Tujuan**: Menemukan barang yang relevan meskipun kata yang diketik pengguna tidak sama persis dengan judul barang di database (*Semantic Search & Retrieval*).
-1. **Input Pengguna**: Pengguna mengetik kata umum di kotak pencarian:  
-   `"alat tulis kantor"` (atau *"stationery writing tools"*).
-2. **Ekstraksi CLIP**: CLIP Text Encoder mengubah kalimat itu menjadi **Vektor 512 angka**.
-3. **Tahap 1 — SVM Memprediksi Kategori Terlebih Dahulu**:
-   * Vektor teks langsung dimasukkan ke SVM.
-   * SVM mengeluarkan kategori: **`Office Supplies`** (Confidence: 85%).
-   * Sistem memberi tahu pengguna kategori yang relevan dengan pencariannya.
-4. **Tahap 2 — Cosine Similarity Menemukan Produk Spesifik**:
-   * Vektor teks dikalikan (*dot product*) dengan seluruh vektor gambar yang ada di database (termasuk foto pulpen gel yang dimasukkan admin pada Alur 1).
-   * Produk diurutkan berdasarkan skor perkalian tertinggi.
-5. **Output ke Layar Pengguna**:
-   * **Kategori Terdeteksi**: `Office Supplies`
-   * **Top 1 Produk Rekomendasi**: Foto & judul *"Pulpen Gel Hitam 0.5mm"* (Meskipun pengguna tidak mengetik kata "pulpen").
-   * **Top 2 - 5**: Produk alat tulis lain yang mirip (misal: stapler, kertas, binder clip).
+### 🔍 ALUR 2A: Pengguna Mencari Produk Menggunakan Teks (Text-to-Image)
+* **Tujuan**: Menemukan barang fisik di katalog meskipun kata yang diketik pengguna berbahasa Indonesia atau menggunakan kalimat bebas.
+1. **Input Pengguna**: User mengetik *"senar gitar elektrik fender"* di kotak pencarian.
+2. **Auto-Translate**: Diterjemahkan otomatis ke bahasa Inggris (*"fender acoustic electric guitar strings"*).
+3. **Ekstraksi CLIP**: Mengubah teks query menjadi vektor 512 angka.
+4. **SVM Deteksi Kategori**: SVM mengonfirmasi kategori yang dicari pengguna (*Musical Instruments*).
+5. **Cosine Similarity**: Vektor teks dikalikan dengan seluruh foto produk di database $\rightarrow$ foto produk yang paling cocok ditampilkan di layar beserta tautan gambarnya (`/image/{product_id}`).
+
+---
+
+### 📷 ALUR 2B: Pengguna Mencari Produk Menggunakan Foto (Image-to-Image)
+* **Tujuan**: Menemukan barang yang sama persis atau paling mirip secara fisik hanya dengan mengunggah gambar/foto kamera (Visual Reverse Search).
+1. **Input Pengguna**: Pengguna mengunggah foto barang yang difoto dari kamera HP atau file gambar.
+2. **Ekstraksi CLIP Vision**: CLIP Vision Transformer mengekstrak fitur bentuk, warna, dan tekstur menjadi vektor visual 512 dimensi.
+3. **SVM Deteksi Kategori**: SVM memprediksi kelompok kategori visual barang tersebut.
+4. **Cosine Similarity Visual**: Menghitung jarak kemiripan antara foto input pengguna dengan seluruh foto produk yang tersimpan di database.
+5. **Output**: Menampilkan kartu-kartu foto produk asli di katalog yang bentuk visualnya paling identik beserta skor persentase kemiripan (*Vector Similarity %*).
 
 ---
 
 ### 📌 Ringkasan Eksekutif 1 Paragraf
-> **Kategori ritel ditentukan oleh kita sendiri**. CLIP bertindak sebagai mesin penerjemah universal yang mengubah foto dan teks menjadi bahasa angka (vektor 512 dimensi). SVM bertindak sebagai polisi pembatas yang menghafal batas kategori toko berdasarkan koordinat angka tersebut. Saat pengguna mencari barang dengan kata apa pun, CLIP membaca maknanya, SVM langsung menebak kategorinya, dan Cosine Similarity menarik 5 foto produk paling mirip dari database toko Anda secara instan.
+> Sistem ini menggabungkan keunggulan **CLIP** (Vision-Language Universal Encoder) dan **Linear SVM** (Supervised Classifier). Di sisi Admin, kombinasi foto dan judul diolah menjadi vektor multimodal 1024 dimensi untuk auto-categorization akurat (Top-3 91.88%). Di sisi Pengguna, sistem mendukung pencarian ganda (*Dual Search*): mencari foto barang fisik menggunakan kalimat teks bahasa alami (Alur 2A) maupun mencari barang dengan mengunggah foto produk langsung untuk mencocokkan kemiripan visual vektornya (Alur 2B) melalui antarmuka web interaktif (`/search-ui`).
 
